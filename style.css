@@ -1,0 +1,64 @@
+/*
+Theme Name: Frontier Child
+Theme URI: http://ronangelo.com/frontier/
+Description: Frontier is a multi-purpose, HTML5 and CSS3 WordPress theme. It lets you choose between 1, 2 or 3 column layouts while offering independent template layouts for pages. The theme's responsive design makes it compatible with a wide variety of devices and screen resolutions. Frontier is easy to customize through its wide array of options that are simple and easy to understand. It has a lot of strategically placed Widget Areas and Action Hooks that helps achieve a higher level of customization. Theme features include favicons, logos, header images, color options, custom css, a simple image slider, rtl support and a whole lot more. Frontier accomplishes all this while maintaining a minimal file size for a fast and efficient WordPress experience.
+Author: ronangelo
+Author URI: http://ronangelo.com/
+Version: 1.2.4
+Template: frontier
+Text Domain: frontier
+License: GNU General Public License, Version 3 or later
+License URI: http://www.gnu.org/licenses/gpl.html
+
+--------------------------------------------- */
+
+@import url("../frontier/style.css");
+ 
+/* =Theme customization starts here
+------------------------------------------------------- */
+table 
+{
+    border: 0px;
+}
+
+th, td 
+{
+    border: 0px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* The following needs to be in the parent theme.  That used to include
+a float: left; which interferes with the right justified last:child below.
+#nav-main .nav-main {
+	position: relative;
+	border-left: 1px solid #023266;
+	border-right: 1px solid #4878AC;
+	z-index: 300;
+}
+*/
+
+#nav-main .nav-main li:last-child {
+    float: right;
+    padding-top: 8px;
+}
+
+/*Gravity Form Column Stuff*/
+.gform_wrapper.two-column_wrapper ul.gform_fields 
+{
+	display: none;
+}
+.gform_wrapper.two-column_wrapper ul.gform_fields.gform_column 
+{
+	display: block;
+	float: left;
+	width: 50%;
+}
+.gform_wrapper.two-column_wrapper ul.gform_fields.gform_column_clear 
+{
+	display: block;
+	clear: both;
+}
+.gform_wrapper.two-column_wrapper ul.gform_column li.gsection 
+{
+	display: none;
+}
