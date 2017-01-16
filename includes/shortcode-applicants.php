@@ -37,6 +37,165 @@ EQUERY1;
 }
 
 add_shortcode('find_applicants', 'find_applicants');
+function find_applicants_2($atts)
+{
+	extract(shortcode_atts(array('arg' => 'default'), $atts));
+
+	global $wpdb;
+	$user_filter = (array_key_exists('users', $_GET)) ? $_GET['users'] : "";
+	if ($user_filter && $user_filter != 'all') 
+	{
+		$user_filter = <<<EUSERFILTER
+where wp_help_applicant.last_name like
+'%$user_filter%' or
+wp_help_applicant.first_name like
+'%$user_filter%'
+EUSERFILTER;
+	}
+	else
+	{
+		$user_filter = "";
+	}
+		
+	$creator = "";
+	$created_by = (array_key_exists('created_by', $_GET)) ? $_GET['created_by'] : "";
+	if ($created_by)
+	{
+		$user_filter = " where wp_help_applicant.created_by = " . $created_by;	
+		$owner_rs = $wpdb->get_results("select display_name from wp_hi0lk7_users where ID = " . $created_by);
+		if ($wpdb->num_rows > 0)
+		{
+			$owner_row = $owner_rs[0];
+			$creator = $owner_row->display_name;	
+		}
+	}
+	
+	$query = <<<EQUERY
+select wp_help_applicant.id as id, first_name, last_name, flagged, 
+mobile_phone, phone 
+from wp_help_applicant 
+$user_filter 
+order by last_name
+EQUERY;
+	
+	$applicants = $wpdb->get_results($query);
+	
+	if ($creator)
+	{
+		echo "Showing records entered by <b>" . $creator . "</b>";
+	}
+	
+	echo "<table class=\"display hover row-border\" id=\"search_table\">" . PHP_EOL;
+	echo "<thead><tr><th align='left'>Last Name</th><th align='left'>First Name</th><th>Flagged</th><th>Phone</th><th>Action</th>";
+	echo "</tr></thead>";
+	echo "<tfoot><tr><th align='left'>Last Name</th><th align='left'>First Name</th><th>Flagged</th><th>Phone</th><th>Action</th>";
+	echo "</tr></tfoot><tbody>";
+	foreach ($applicants as $applicant)
+	{
+		$phone = $applicant->mobile_phone;
+		if ($phone != null)
+			$phone = $phone . "  <i>(mobile)</i>";
+		else 
+		{
+			$phone = $applicant->phone;
+			if ($phone != null)
+				$phone = $phone . "  <i>(home)</i>";
+		}
+		
+		$flag_checked = ($applicant->flagged) ? "checked" : "unchecked";
+    		
+		$row = <<<EROW
+<tr><td>$applicant->last_name</td>
+<td>$applicant->first_name</td>
+
+<td align="center">
+<input id="flagger_$applicant->id" type="checkbox" 
+value="1" $flag_checked onchange="flagged($applicant->id, 
+    document.getElementById('flagger_$applicant->id'))"/></td>
+
+<td align=center>$phone</td>
+<td align=center>
+<select id="action-$applicant->id" onchange="PageJump($applicant->id)">
+  <option value="null">--Select--
+  <option value="vp">View Profile
+  <option value="ep">Edit Profile
+  <option value="vh">View History
+  <option value="ar">Add Request
+  <option value="da">Delete Applicaant
+</select></td></tr>
+EROW;
+		echo $row;
+	}
+	echo "</tbody></table>" . PHP_EOL;
+	
+	$vp = get_permalink(Permalink::ViewProfile) . "?id=";
+	$ep = get_permalink(Permalink::EditProfile) . "?id=";
+	$vh = get_permalink(Permalink::ViewHistory) . "?applicant_id=";
+	$ar = get_permalink(Permalink::AddRequest) . "?applicant_id=";
+	$da = get_permalink(Permalink::DeleteApplicant) . "?id=";
+	
+	$flagged_JS = GetFlaggedScript();
+	echo <<<ESCRIPT
+<script>
+$flagged_JS
+
+function PageJump(id) {
+
+		var actionid = "action-".concat(id);
+		var x = document.getElementById(actionid).value;
+		switch(x) 
+		{
+		case "vp":
+			window.location.href = "$vp".concat(id);
+			break;  
+		case "ep":
+			window.location.href = "$ep".concat(id);
+			break;
+		case "vh":
+			window.location.href = "$vh".concat(id);
+			break;
+		case "ar":
+			window.location.href = "$ar".concat(id);
+			break;
+		case "da":
+			window.location.href = "$da".concat(id);
+			break;
+		default:
+			break;
+		}
+	//}
+	
+	//clickID = "";
+}
+</script>
+ESCRIPT;
+	echo PHP_EOL;
+}
+
+add_shortcode('update_flagged_status', 'update_flagged_status');
+function update_flagged_status($atts)
+{
+	
+    $applicant_id = $_GET['applicant_id'];
+    $flagged = $_GET['flagged'];
+    $set_flag = "0";
+    
+    if ($flagged == "true")
+    	$set_flag = "1";
+    
+    if ($applicant_id > 0)
+    {
+    	global $wpdb;
+    	if (!$wpdb->query("update wp_help_applicant set 
+    			flagged = $flagged where id = $applicant_id"))
+    	{
+    		echo "Error: " . wpdb_get_error($wpdb);
+    		return;
+    	}    	
+    }
+}
+
+add_shortcode('find_applicants', 'find_applicants_2');
 function find_applicants($atts)
 {
 	extract(shortcode_atts(array('arg' => 'default'), $atts));
@@ -160,6 +319,7 @@ function PageJump(id) {
 ESCRIPT;
 	echo PHP_EOL;
 }
+
 
 add_shortcode('nav_search', 'nav_search');
 function nav_search($atts)
@@ -383,9 +543,12 @@ ESELECT;
 		$vh = get_permalink(Permalink::ViewHistory) . "?applicant_id=";
 		$ar = get_permalink(Permalink::AddRequest) . "?applicant_id=";
 		$da = get_permalink(Permalink::DeleteApplicant) . "?id=";
-	
+		$flagged_JS = GetFlaggedScript();
+		
 	    $combo_box_js = <<<EJS
 <script>
+$flagged_JS
+
 function PageJump(id) {
 
 		var actionid = "action-".concat(id);
@@ -426,6 +589,9 @@ EJS;
 		
 		$applicant = $applicants[0];
 		$phone = '';
+		
+		$flag_checked = ($applicant->flagged == 1) ? "checked" : "unchecked";
+		
 		if ($applicant->phone != null)
 		{
 			$phone = "Home: " . $applicant->phone;
@@ -542,7 +708,11 @@ $combo_box_js
 <table id='profile'>
   <tbody>
   <tr>
-	<td width=200 align="center"><img src='/images/head-shoulders.jpg' width=125 height=125><br/>
+	<td width=200 align="center">
+	<input id="flagger_$id" type="checkbox" 
+value="1" $flag_checked onchange="flagged($id, 
+    document.getElementById('flagger_$id'))"/>&nbsp;Flagged
+    <img src='/images/head-shoulders.jpg' width=125 height=125><br/>
 	  $combo_box
 	</td>
 	<td valign="top">$applicant_text</td>
@@ -614,6 +784,29 @@ function delete_applicant($atts)
 	}
 }
 
+function GetFlaggedScript()
+{
+	$flagged_text = <<<EFLAGGED
+function flagged(applicant_id, obj) {
 
+	//Do some AJAX stuff to update the user's follow_up status.
+    var flagged = obj.checked;
+    var qryString = "?applicant_id=" + applicant_id + "&flagged=" + flagged;
 
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() 
+    {
+    	if (this.readyState == 4 && this.status == 200)
+        {
+            //if (alert.responseText.startsWith("Error"))
+            //	alert(this.responseText);
+        }  
+    };
+    xhttp.open("GET", "/flagged-ajax-script/ " + qryString, true);
+    xhttp.send();
+} 
+EFLAGGED;
+	
+	return $flagged_text;
+}
 ?>
