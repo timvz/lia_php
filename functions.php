@@ -79,7 +79,7 @@ function print_datatables_script() {
 				"paging": false,
 				"deferRenderer": true,
 				"columns": [ { "searchable": true }, { "searchable": true },
-				    { "searchable": false },{ "searchable": false } ]
+				    { "searchable": false },{ "searchable": false },{ "searchable": false } ]
 			});  
 		});
 </script>
